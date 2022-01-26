@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta charset="utf-8" />
+		<title>SMS-sender</title>
+		<script src="./js/xlsx.full.min.js"></script>
+		<script src="./js/jquery-3.6.0.js"></script>
+		<style>
+			#body {
+				display: flex;
+				justify-content: center;
+			}
+
+			p {
+				font-size: 12px;
+			}
+
+			#send {
+				width: 80%;
+				left: 50%;
+				top: 50%;
+				height: 2rem;
+				font-size: 1.25rem;
+				transform: translate(-50%, -50%);
+
+				-webkit-transform: translate(-50%, -50%);
+				margin-top: 20px;
+			}
+
+			.exdatas {
+
+				-webkit-appearance: none;
+				-moz-appearance: none;
+				font-size: 1em;
+				height: 1.5em;
+
+
+				color: #6a6f77;
+				width: 70%;
+				margin: auto;
+				outline: 0;
+				box-sizing: border-box;
+				text-align: center;
+				font-size: 1rem;
+				height: 2.7em;
+				border: 0rem;
+				border-bottom: 1px solid #d0eeff;
+				color: #000000;
+				-web-kit-appearance: none;
+				-moz-appearance: none;
+				display: block;
+				outline: 0;
+				padding: 0 1em;
+				text-decoration: none;
+
+
+			}
+
+			::-moz-placeholder {
+				/* Mozilla Firefox 4 to 18 */
+				color: #959ca6;
+			}
+
+			::-moz-placeholder {
+				/* Mozilla Firefox 19+ */
+				color: #959ca6;
+			}
+
+			input::-webkit-input-placeholder {
+				color: #959ca6;
+			}
+
+			.file,
+			button {
+				position: relative;
+				font-size: 1rem;
+				display: inline-block;
+				background: #D0EEFF;
+				border: 1px solid #99D3F5;
+				border-radius: 4px;
+				margin: 5px;
+				overflow: hidden;
+				color: #1E88C7;
+				text-decoration: none;
+				text-indent: 0;
+				text-align: center;
+				width: 20%;
+				line-height: 20px;
+			}
+
+			.file input {
+				position: absolute;
+				right: 0;
+
+				opacity: 0;
+			}
+		</style>
+		<script type="text/javascript">
+			// 读取本地excel文件
+			function readWorkbookFromLocalFile(file) {
+				var reader = new FileReader();
+				reader.onload = function(e) {
+					var data = e.target.result;
+					var workbook = XLSX.read(data, {
+						type: 'binary'
+					});
+					// 处理excel文件
+					handle(workbook);
+				};
+				reader.readAsBinaryString(file);
+			}
+			var _openw = null;
+			// 处理excel文件
+			function handle(workbook) {
+				// workbook.SheetNames[0] excel第一个sheet
+				var datas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+				window.datas = datas;
+				if (datas.length > 0) {
+
+					// 获取列名是汇总列名，避免某行某个字段没有值，会缺少字段
+					// 标题
+					var title = [];
+					window.title = title;
+					// 获取每行数据
+					first:
+						for (var index in datas) { // datas数组，index为索引
+							second: for (var key in datas[index]) { // datas[index]对象,key为键
+								if (-1 === title.indexOf(key)) {
+									title.push(key);
+								}
+							}
+						}
+					$(".exdatas").remove();
+					$("p").remove();
+					$("#send").remove();
+					var send = "<button onclick='send()' id='send'>发送</button>"
+
+					for (var i = 0; i < title.length; i++) {
+
+						var extable = "<input type='text' class='exdatas' style='display:block' ></input>";
+						$("body").append(extable);
+						$('.exdatas:eq(' + i + ')').attr("placeholder", i);
+					}
+					$("body").append(send);
+					// 列名
+					console.log(title);
+					// 数据
+					console.log(datas);
+
+				}
+			}
+
+			function openAbout() {
+				if (_openw) {
+					return;
+				} // 防止快速点击
+				_openw = plus.webview.create('about.html', 'about', {
+					scrollIndicator: 'none',
+					scalable: false,
+					popGesture: 'close',
+					backButtonAutoControl: 'close',
+					titleNView: {
+						autoBackButton: true,
+						backgroundColor: '#d0eeff',
+						titleColor: '#1e88c7',
+						titleText: '关于',
+
+					}
+				});
+				_openw.addEventListener('close', function() {
+					_openw = null;
+				}, false);
+				_openw.show('zoom-fade-out');
+			}
+
+			function start() {
+				$("p").remove();
+				var smscon = new Array(2);
+				window.smscon = smscon;
+				smscon[0] = new Array;
+				smscon[1] = new Array;
+				for (var i = 0; i < datas.length; i++) {
+					smscon[0][i] = "";
+					for (var n = 0; n < title.length - 1; n++) {
+						smscon[0][i] += $(".exdatas")[n].value + datas[i][title[n]];
+
+					}
+					smscon[1][i] = new Array;
+					smscon[1][i][0] = datas[i][title[title.length - 1]];
+					smscon[0][i] += $(".exdatas")[title.length - 1].value;
+				}
+				console.log(smscon);
+				for (var i = 0; i < smscon[1].length; i++) {
+					var tip = "<p>" + smscon[1][i] + ":" + smscon[0][i] + "<p>"
+					$("body").append(tip);
+				}
+
+			}
+
+			function copyToClip(content) {
+				var aux = document.createElement("input");
+				aux.setAttribute("value", content);
+				document.body.appendChild(aux);
+				aux.select();
+				document.execCommand("copy");
+				document.body.removeChild(aux);
+			}
+
+			function send() {
+
+				for (var i = 0; i < smscon[1].length; i++) {
+
+					msg = plus.messaging.createMessage(plus.messaging.TYPE_SMS);
+					msg.to = smscon[1][i];
+					msg.body = unescape(smscon[0][i]);
+					msg.silent = true;
+					plus.messaging.sendMessage(msg);
+					console.log(msg.body)
+				}
+			}
+		</script>
+	</head>
+	<body>
+		​ ​ <div id="body">
+			<a href="javascript:;" class="file">选择文件<input type="file" name="file"
+					onchange="readWorkbookFromLocalFile(this.files[0])" /></a><button
+				onclick="start()">开始</button><button onclick="copyToClip('%0A')">复制</button><button
+				onclick="location.reload();">刷新</button>
+		</div>
+	</body>
+</html>
